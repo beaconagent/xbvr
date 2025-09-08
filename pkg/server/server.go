@@ -28,6 +28,7 @@ import (
 	"github.com/xbapps/xbvr/pkg/config"
 	"github.com/xbapps/xbvr/pkg/migrations"
 	"github.com/xbapps/xbvr/pkg/models"
+	"github.com/xbapps/xbvr/pkg/server"
 	"github.com/xbapps/xbvr/pkg/session"
 	"github.com/xbapps/xbvr/pkg/tasks"
 	"github.com/xbapps/xbvr/ui"
@@ -162,6 +163,10 @@ func StartServer(version, commit, branch, date string) {
 
 	// CORS
 	handler := cors.Default().Handler(r)
+
+	// Global request concurrency limit
+	concurrentLimit := 10
+	handler = QueueMiddleware(concurrentLimit, handler)
 
 	// WAMP router
 	routerConfig := &router.Config{
