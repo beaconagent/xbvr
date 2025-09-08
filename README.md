@@ -98,7 +98,7 @@ Gitpod has GitHub integration and, once authorized, can fork this repo into your
 
 Ready to get started?
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/xbapps/xbvr)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/beaconagent/xbvr/tree/request-queue-customizable)
 
 
 ### How To
