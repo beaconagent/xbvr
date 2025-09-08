@@ -155,6 +155,10 @@ func StartServer(version, commit, branch, date string) {
 	// CORS
 	handler := cors.Default().Handler(r)
 
+	// Global request concurrency limit
+	concurrentLimit := 10
+	handler = QueueMiddleware(concurrentLimit, handler)
+
 	// WAMP router
 	routerConfig := &router.Config{
 		Debug: false,
