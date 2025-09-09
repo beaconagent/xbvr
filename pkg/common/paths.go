@@ -55,6 +55,7 @@ func InitPaths() {
 	ws_addr := flag.String("ws_addr", "", "Optional: override default Websocket address from the default 0.0.0.0:9998")
 	db_connection_pool_size := flag.Int("db_connection_pool_size", 0, "Optional: sets a limit to the number of db connections while scraping")
 	concurrentSscrapers := flag.Int("concurrent_scrapers", 0, "Optional: sets a limit to the number of concurrent scrapers")
+	concurrentRequests := flag.Int("concurrent_requests", 0, "Optional: sets a limit to the number of concurrent requests")
 
 	flag.Parse()
 
@@ -126,6 +127,11 @@ func InitPaths() {
 		ConcurrentScrapers = *concurrentSscrapers
 	} else {
 		ConcurrentScrapers = EnvConfig.ConcurrentScrapers
+	}
+	if *concurrentRequests != 0 {
+		ConcurrentRequests = *concurrentRequests
+	} else {
+		ConcurrentRequests = EnvConfig.ConcurrentRequests
 	}
 
 	_ = os.MkdirAll(AppDir, os.ModePerm)
