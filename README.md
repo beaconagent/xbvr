@@ -152,5 +152,6 @@ esc - closes details pane
 |	`--ws_addr` | XBVR_WS_ADDR | String | override default Websocket address from the default 0.0.0.0:9998|
 |	`--db_connection_pool_size` | DB_CONNECTION_POOL_SIZE | Int | sets the connection pool size for mariadb databases|
 |	`--concurrent_scrapers` | CONCURRENT_SCRAPERS | Int | set the number of scrapers that run concurrently default 9999|
+|	`--requests_timeout` | REQUESTS_TIMEOUT | Int | set the internal requests timeout in ms from the default 10000|
 | | UI_USERNAME | String | set the username for UI authentication
 | | UI_PASSWORD | String | set the password for UI authentications
