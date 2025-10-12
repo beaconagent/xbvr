@@ -139,7 +139,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../../api';
 import VueLoadImage from 'vue-load-image'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 
@@ -172,7 +172,7 @@ export default {
       }
     },
     taskScrape (scraper) {
-      ky.get(`/api/task/scrape?site=${scraper}`)
+      api.get(`/api/task/scrape?site=${scraper}`)
     },
     taskScrapeScene (scraper) {
       this.currentScraper=scraper      
@@ -247,7 +247,7 @@ export default {
         } else {
           this.$buefy.toast.open({message: `Scene scraping in progress`, type: 'is-warning', duration: 5000})
         }
-        ky.post(`/api/task/singlescrape`, {timeout: false, json: { site: this.currentScraper, sceneurl: this.additionalInfo[0].fieldValue, additionalinfo: this.additionalInfo.slice(1)}})
+        api.post(`/api/task/singlescrape`, {timeout: false, json: { site: this.currentScraper, sceneurl: this.additionalInfo[0].fieldValue, additionalinfo: this.additionalInfo.slice(1)}})
         .json()
         .then(data => { 
           if (data.status == 'OK') {          
@@ -260,7 +260,7 @@ export default {
       }
     },
     forceSiteUpdate (site, scraper) {
-      ky.post('/api/options/scraper/force-site-update', {
+      api.post('/api/options/scraper/force-site-update', {
         json: { scraper_id: scraper }
       })
       this.$buefy.toast.open(`Scenes from ${site} will be updated on next scrape`)
@@ -273,12 +273,12 @@ export default {
         hasIcon: true,
         onConfirm: function () {
           if (site.master_site_id==""){
-            ky.post('/api/options/scraper/delete-scenes', {
+            api.post('/api/options/scraper/delete-scenes', {
               json: { scraper_id: site.id }
             })
           } else {
             const external_source = 'alternate scene ' + site.id
-            ky.delete(`/api/extref/delete_extref_source`, {
+            api.delete(`/api/extref/delete_extref_source`, {
               json: {external_source: external_source}
             });
           }
@@ -294,11 +294,11 @@ export default {
         onConfirm: function () {
           const external_source = 'alternate scene ' + site.id          
           if (all) {
-            ky.delete(`/api/extref/delete_extref_source_links/all`, {
+            api.delete(`/api/extref/delete_extref_source_links/all`, {
               json: {external_source: external_source}
             });
           } else {
-            ky.delete(`/api/extref/delete_extref_source_links/keep_manual`, {
+            api.delete(`/api/extref/delete_extref_source_links/keep_manual`, {
               json: {external_source: external_source}
             });
           }
@@ -306,14 +306,14 @@ export default {
       })
     },
     scrapeActors(site, scraper) {      
-      ky.get('/api/extref/generic/scrape_by_site/' + scraper)
+      api.get('/api/extref/generic/scrape_by_site/' + scraper)
       this.$buefy.toast.open(`Scraping Actor Details from ${site}`)
     },
     async toggleAllSubscriptions(){
       const table = this.$refs.scraperTable;
       this.isLoading=true
       for (let i=0; i<table.newData.length; i++) {
-        await ky.put(`/api/options/sites/subscribed/${table.newData[i].id}`, { json: {} }).json()
+        await api.put(`/api/options/sites/subscribed/${table.newData[i].id}`, { json: {} }).json()
         this.$store.dispatch('optionsSites/load')
       }
       this.isLoading=false
@@ -322,7 +322,7 @@ export default {
       const table = this.$refs.scraperTable;
       this.isLoading=true
       for (let i=0; i<table.newData.length; i++) {
-        await ky.put(`/api/options/sites/limit_scraping/${table.newData[i].id}`, { json: {} }).json()
+        await api.put(`/api/options/sites/limit_scraping/${table.newData[i].id}`, { json: {} }).json()
         this.$store.dispatch('optionsSites/load')
       }
       this.isLoading=false

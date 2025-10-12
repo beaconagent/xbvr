@@ -293,7 +293,7 @@
 
 <script>
 import SavedSearch from './SavedSearch'
-import ky from 'ky'
+import api from '../../api';
 
 export default {
   name: 'Filters',
@@ -364,7 +364,7 @@ export default {
     },
     createAkaGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/aka/create', {json: {actorList: this.cast}}).json().then(data => {
+      api.post('/api/aka/create', {json: {actorList: this.cast}}).json().then(data => {
         this.cast.push(data.akas.aka_actor.name)
         this.$store.dispatch('sceneList/filters')
         this.reloadList()
@@ -376,7 +376,7 @@ export default {
     },
     deleteAkaGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/aka/delete', {json: {name: this.cast[0]}}).json().then(data => {
+      api.post('/api/aka/delete', {json: {name: this.cast[0]}}).json().then(data => {
         this.cast = []
         this.$store.dispatch('sceneList/filters')
         this.reloadList()
@@ -385,7 +385,7 @@ export default {
     },
     addToAkaGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/aka/add', {json: {actorList: this.cast}}).json().then(data => {        
+      api.post('/api/aka/add', {json: {actorList: this.cast}}).json().then(data => {        
         // delete old aka & add new name
         this.cast = this.cast.filter(e => !e.startsWith("aka:")) 
         this.cast.push(data.akas.aka_actor.name) 
@@ -400,7 +400,7 @@ export default {
     },
     removeFromAkaGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/aka/remove', {json: {actorList: this.cast}}).json().then(data => {        
+      api.post('/api/aka/remove', {json: {actorList: this.cast}}).json().then(data => {        
         // delete old aka & add new name
         this.cast = this.cast.filter(e => !e.startsWith("aka:")) 
         this.cast.push(data.akas.aka_actor.name)
@@ -427,7 +427,7 @@ export default {
     createTagGroup () {
       this.isGroupTagNameModalActive = false
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/tag_group/create', {json: {name: this.tagGroupName, tagList: this.tags}}).json().then(data => {
+      api.post('/api/tag_group/create', {json: {name: this.tagGroupName, tagList: this.tags}}).json().then(data => {
         if (data.tag_group.tag_group_tag.name != "") {
           this.tags.push(data.tag_group.tag_group_tag.name)
         }
@@ -441,7 +441,7 @@ export default {
     },
     deleteTagGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/tag_group/delete', {json: {name: this.tags[0]}}).json().then(data => {
+      api.post('/api/tag_group/delete', {json: {name: this.tags[0]}}).json().then(data => {
         this.tags = []
         this.$store.dispatch('sceneList/filters')
         this.reloadList()
@@ -450,7 +450,7 @@ export default {
     },
     addToTagGroup () {      
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/tag_group/add', {json: {tagList: this.tags}}).json().then(data => {
+      api.post('/api/tag_group/add', {json: {tagList: this.tags}}).json().then(data => {
         this.$store.dispatch('sceneList/filters')       
         this.reloadList()        
         if (data.status != '') {
@@ -462,7 +462,7 @@ export default {
     },
     removeFromTagGroup () {
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/tag_group/remove', {timeout: 60000, json: {tagList: this.tags}}).json().then(data => {        
+      api.post('/api/tag_group/remove', {timeout: 60000, json: {tagList: this.tags}}).json().then(data => {        
         this.$store.dispatch('sceneList/filters')
         this.reloadList()
         if (data.status != '') {
@@ -474,7 +474,7 @@ export default {
     renameTagGroup () {
       this.isGroupTagNameModalActive = false
       this.$store.state.sceneList.isLoading = true
-      ky.post('/api/tag_group/rename', {json: {name: this.tagGroupName, tagList: this.tags}}).json().then(data => {
+      api.post('/api/tag_group/rename', {json: {name: this.tagGroupName, tagList: this.tags}}).json().then(data => {
         if (data.status != '') {
           this.$buefy.toast.open({message: `${data.status}`, type: 'is-danger', duration: 5000})
         } else {
@@ -495,7 +495,7 @@ export default {
         }
       }
 
-      ky.get('/api/tag_group/' + name, {timeout: 60000}).json().then(data => {        
+      api.get('/api/tag_group/' + name, {timeout: 60000}).json().then(data => {        
         if (data.status != '') {
           this.$buefy.toast.open({message: `${data.status}`, type: 'is-danger', duration: 5000})
         } else {
@@ -578,7 +578,7 @@ export default {
     },
     async fetchFilters() {
         this.filteredAttributes=['Loading attributes']
-        ky.get('/api/scene/filters', {timeout: 300000}).json().then(data => {
+        api.get('/api/scene/filters', {timeout: 300000}).json().then(data => {
           this.filteredAttributes=data.attributes          
       })      
     }

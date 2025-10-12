@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from './api';
 import VueLoadImage from 'vue-load-image'
 import GlobalEvents from 'vue-global-events'
 import { format, parseISO } from 'date-fns'
@@ -133,7 +133,7 @@ export default {
 
       this.isFetching = true
 
-      const resp = await ky.get('/api/scene/search', {
+      const resp = await api.get('/api/scene/search', {
         searchParams: {
           q: query
         }

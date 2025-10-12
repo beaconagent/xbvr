@@ -399,7 +399,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../api';
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
 import { format, formatDistance, parseISO } from 'date-fns'
@@ -573,7 +573,7 @@ export default {
       this.alternateSources = [];
       if (this.displayingAlternateSource) return 0
       try {
-        const response = await ky.get('/api/scene/alternate_source/' + this.item.id).json();
+        const response = await api.get('/api/scene/alternate_source/' + this.item.id).json();
         if (response==null){
           return 0
         }
@@ -610,7 +610,7 @@ export default {
     this.setupPlayer()
 
     // load default cuepoint actions & positions from kv entry in the db
-    ky.get('/api/options/cuepoints').json().then(data => {
+    api.get('/api/options/cuepoints').json().then(data => {
       this.cuepointActTags = data.actions
       this.cuepointPositionTags = data.positions
       this.cuepointActTags.unshift("")
@@ -803,7 +803,7 @@ watch:{
       }).href
     },
     showActorDetail (actor_id) {
-      ky.get('/api/actor/'+actor_id).json().then(data => {
+      api.get('/api/actor/'+actor_id).json().then(data => {
         if (data.id != 0){
           this.$store.commit('overlay/showActorDetails', { actor: data })
           this.close()
@@ -828,7 +828,7 @@ watch:{
         hasIcon: true,
         id: 'heh',
         onConfirm: () => {
-          ky.post(`/api/files/unmatch`, {json:{file_id: file.id}}).json().then(data => {
+          api.post(`/api/files/unmatch`, {json:{file_id: file.id}}).json().then(data => {
             this.$store.commit('overlay/showDetails', { scene: data })
           })
         }
@@ -841,14 +841,14 @@ watch:{
         type: 'is-danger',
         hasIcon: true,
         onConfirm: () => {
-          ky.delete(`/api/files/file/${file.id}`).json().then(data => {
+          api.delete(`/api/files/file/${file.id}`).json().then(data => {
             this.$store.commit('overlay/showDetails', { scene: data })
           })
         }
       })
     },
     selectScript (file) {
-      ky.post(`/api/scene/selectscript/${this.item.id}`, {
+      api.post(`/api/scene/selectscript/${this.item.id}`, {
         json: {
           file_id: file.id,
         }
@@ -918,7 +918,7 @@ watch:{
       }
       this.currentCuepointId = 0
 
-      ky.post(`/api/scene/${this.item.id}/cuepoint`, {
+      api.post(`/api/scene/${this.item.id}/cuepoint`, {
         json: {
           track: this.track,
           name: name,
@@ -936,7 +936,7 @@ watch:{
       })
     },
     deleteCuepoint (cuepointid) {
-      ky.delete(`/api/scene/${this.item.id}/cuepoint/${cuepointid}`)
+      api.delete(`/api/scene/${this.item.id}/cuepoint/${cuepointid}`)
         .json().then(data => {
           this.$store.commit('sceneList/updateScene', data)
           this.$store.commit('overlay/showDetails', { scene: data })
@@ -953,7 +953,7 @@ watch:{
       return new Date(seconds * 1000).toISOString().substr(11, 10)
     },
     setRating (val) {
-      ky.post(`/api/scene/rate/${this.item.id}`, { json: { rating: val } })
+      api.post(`/api/scene/rate/${this.item.id}`, { json: { rating: val } })
 
       const updatedScene = Object.assign({}, this.item)
       updatedScene.star_rating = val
@@ -1098,7 +1098,7 @@ watch:{
       // load search fields
       this.searchfields = []      
       if (this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !this.displayingAlternateSource) {
-        ky.get('/api/scene/searchfields', {
+        api.get('/api/scene/searchfields', {
           searchParams: {
             q: id
           },
@@ -1123,7 +1123,7 @@ watch:{
       this.waitingForQuickFind = true
     }, 
     async handleRelinkExtRef() {
-      const response = await ky.post(`/api/extref/edit_link`, {
+      const response = await api.post(`/api/extref/edit_link`, {
         json: {
           external_source: this.$store.state.overlay.details.altsrc.external_source,
           external_id: this.$store.state.overlay.details.altsrc.external_id,
@@ -1170,7 +1170,7 @@ watch:{
       })
     },
     async handleRefreshExtRef() {
-      const response = await ky.delete(`/api/extref/delete_extref`, {
+      const response = await api.delete(`/api/extref/delete_extref`, {
         json: {
           external_source: this.$store.state.overlay.details.altsrc.external_source,
           external_id: this.$store.state.overlay.details.altsrc.external_id,
@@ -1195,7 +1195,7 @@ watch:{
       })    
     },    
     async handleFlagExtRefDeleted() {
-      const response = await ky.post(`/api/extref/edit_link`, {
+      const response = await api.post(`/api/extref/edit_link`, {
         json: {
           external_source: this.$store.state.overlay.details.altsrc.external_source,
           external_id: this.$store.state.overlay.details.altsrc.external_id,
