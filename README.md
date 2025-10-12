@@ -98,8 +98,20 @@ Gitpod has GitHub integration and, once authorized, can fork this repo into your
 
 Ready to get started?
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/xbapps/xbvr)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/beaconagent/xbvr/tree/migrate-to-devcontainers)
 
+### Launch flow
+ - postCreateCommand: vm init, repo clone, add concurrently + air
+ - switches to VS Code
+ - postStartCommand: builds go + yarn + starts yarn dev
+ - yarn dev (generates go, builds ui + watches, starts server + runs db migrations)
+To finish build, wait until "Building legacy + Build module" is done, then edit and save any go file (ex. add version to main.go), then wait ~4 mins.
+
+### Prod build
+```sh
+yarn build
+go build -o xbvr .
+```
 
 ### How To
 
