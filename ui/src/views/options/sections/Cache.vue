@@ -85,7 +85,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../../api';
 import prettyBytes from 'pretty-bytes'
 
 export default {
@@ -127,7 +127,7 @@ export default {
   methods: {
     async loadState () {
       this.isLoading = true
-      await ky.get('/api/options/state')
+      await api.get('/api/options/state')
         .json()
         .then(data => {
           this.sizes = data.currentState.cacheSize
@@ -136,12 +136,12 @@ export default {
     },
     async resetCache (kind) {
       this.isLoading = true
-      await ky.delete(`/api/options/cache/reset/${kind}`, { timeout: 30000 })
+      await api.delete(`/api/options/cache/reset/${kind}`, { timeout: 30000 })
       await this.loadState()
       await this.loadSearchState()
     },
     taskRefresh: function () {
-      ky.get('/api/task/scene-refresh')
+      api.get('/api/task/scene-refresh')
     },
     fixInconsistencies () {
       this.$buefy.dialog.confirm({
@@ -150,7 +150,7 @@ export default {
         confirmText: 'Fix All',
         type: 'is-warning',
         onConfirm: async () => {
-          await ky.post('/api/inconsistencies/fixall', { json: {} })
+          await api.post('/api/inconsistencies/fixall', { json: {} })
           this.fixRunning = true
           this.fixPhase = 'scanning'
           this.fixResult = null
@@ -166,11 +166,11 @@ export default {
         this.fixTotal = st.total
         if (st.result) this.fixResult = st.result
       }
-      apply(await ky.get('/api/inconsistencies/status').json())
+      apply(await api.get('/api/inconsistencies/status').json())
       if (this.fixPoll) { clearInterval(this.fixPoll); this.fixPoll = null }
       if (this.fixRunning) {
         this.fixPoll = setInterval(async () => {
-          const st = await ky.get('/api/inconsistencies/status').json()
+          const st = await api.get('/api/inconsistencies/status').json()
           apply(st)
           if (!st.running) {
             clearInterval(this.fixPoll); this.fixPoll = null
@@ -181,7 +181,7 @@ export default {
     },
     async loadSearchState () {
       this.isLoading = true
-      await ky.get('/api/options/state/search')
+      await api.get('/api/options/state/search')
         .json()
         .then(data => {
           this.indexSceneCount = data.documentCount
@@ -191,7 +191,7 @@ export default {
     },
     async indexRescan () {
       this.isLoading = true
-      await ky.get('/api/task/index')
+      await api.get('/api/task/index')
       this.searchInprogress = true
       this.isLoading = false
     },

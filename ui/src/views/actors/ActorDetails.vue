@@ -258,7 +258,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../api';
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
 import { format, parseISO } from 'date-fns'
@@ -291,17 +291,17 @@ export default {
   computed: {
     actor () {      
       const actor = this.$store.state.overlay.actordetails.actor
-      ky.get(`/api/actor/akas/${actor.id}`)
+      api.get(`/api/actor/akas/${actor.id}`)
       .json()
       .then(list => {          
         this.akas = list
       })
-      ky.get(`/api/actor/colleagues/${actor.id}`)
+      api.get(`/api/actor/colleagues/${actor.id}`)
       .json()
       .then(list => {          
         this.colleagues = list
       })
-      ky.get(`/api/actor/extrefs/${actor.id}`)
+      api.get(`/api/actor/extrefs/${actor.id}`)
       .json()
       .then(list => {          
         this.extrefs = list          
@@ -323,7 +323,7 @@ export default {
     },
   },
   mounted () {    
-      ky.get('/api/actor/countrylist')
+      api.get('/api/actor/countrylist')
         .json()
         .then(list => {
           this.countries=list
@@ -353,7 +353,7 @@ export default {
       this.$store.commit('overlay/hideActorDetails')
     },
     setRating (val) {
-      ky.post(`/api/actor/rate/${this.actor.id}`, { json: { rating: val } })
+      api.post(`/api/actor/rate/${this.actor.id}`, { json: { rating: val } })
       const updatedActor = Object.assign({}, this.actor)
       updatedActor.star_rating = val
       this.actor.star_rating = val      
@@ -475,7 +475,7 @@ export default {
       return  arr.join(", ");       
     },
     setActorImage (val) {
-      ky.post('/api/actor/setimage', {
+      api.post('/api/actor/setimage', {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide]
@@ -486,7 +486,7 @@ export default {
       })    
     },
     deleteActorImage (val) {
-      ky.delete('/api/actor/delimage', {
+      api.delete('/api/actor/delimage', {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide]
@@ -530,11 +530,11 @@ export default {
       for (let idx = 0; idx < this.akas.possible_akas.length; idx++) {
         actorlist.push(this.akas.possible_akas[idx].name)
       }
-      ky.post('/api/aka/create', {json: {actorList: actorlist}}).json().then(data => {
+      api.post('/api/aka/create', {json: {actorList: actorlist}}).json().then(data => {
         if (data.status != '') {
           this.$buefy.toast.open({message: `Warning:  ${data.status}`, type: 'is-warning', duration: 5000})
         }
-        ky.get('/api/actor/'+this.actor.id).json().then(data => {
+        api.get('/api/actor/'+this.actor.id).json().then(data => {
           if (data.id != 0){
             this.$store.state.overlay.actordetails.actor = data          
           }          
@@ -546,7 +546,7 @@ export default {
     },
     deleteAkaGroup () {
       this.$store.state.actorList.isLoading = true
-      ky.post('/api/aka/delete', {json: {name: this.actor.name}}).json().then(data => {
+      api.post('/api/aka/delete', {json: {name: this.actor.name}}).json().then(data => {
         this.$store.state.actorList.isLoading = false
       }).then(data => {
         this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
@@ -556,12 +556,12 @@ export default {
     },
     addToAkaGroup (newMember) {
       this.$store.state.actorList.isLoading = true
-      ky.post('/api/aka/add', {json: {actorList: [this.actor.name, newMember]}}).json().then(data => {        
+      api.post('/api/aka/add', {json: {actorList: [this.actor.name, newMember]}}).json().then(data => {        
         // delete old aka & add new name
         if (data.status != '') {
           this.$buefy.toast.open({message: `Warning:  ${data.status}`, type: 'is-warning', duration: 5000})
         }
-        ky.get('/api/actor/'+this.actor.id).json().then(data => {
+        api.get('/api/actor/'+this.actor.id).json().then(data => {
           if (data.id != 0){
             this.$store.state.overlay.actordetails.actor = data          
           }          
@@ -572,12 +572,12 @@ export default {
     },
     removeFromAkaGroup (memberToRemove) {
       this.$store.state.actorList.isLoading = true
-      ky.post('/api/aka/remove', {json: {actorList: [this.actor.name, memberToRemove]}}).json().then(data => {        
+      api.post('/api/aka/remove', {json: {actorList: [this.actor.name, memberToRemove]}}).json().then(data => {        
         // delete old aka & add new name
         if (data.status != '') {
           this.$buefy.toast.open({message: `Warning:  ${data.status}`, type: 'is-warning', duration: 5000})
         }
-        ky.get('/api/actor/'+this.actor.id).json().then(data => {          
+        api.get('/api/actor/'+this.actor.id).json().then(data => {          
           if (data.id != 0){
             this.$store.state.overlay.actordetails.actor = data          
           }          
@@ -621,8 +621,8 @@ export default {
       if (url.includes('stashdb')) {
         this.$store.state.actorList.isLoading = true
         const lastSlashIndex = url.lastIndexOf('/');
-        ky.get('/api/extref/stashdb/refresh_performer/'+url.substring(lastSlashIndex + 1)).then(data => {
-          ky.get('/api/actor/'+this.actor.id).json().then(data => {          
+        api.get('/api/extref/stashdb/refresh_performer/'+url.substring(lastSlashIndex + 1)).then(data => {
+          api.get('/api/actor/'+this.actor.id).json().then(data => {          
             if (data.id != 0){
               this.$store.state.overlay.actordetails.actor = data
               this.$store.state.actorList.isLoading = false
@@ -632,9 +632,9 @@ export default {
         })
       } else {
         this.$store.state.actorList.isLoading = true
-        ky.post('/api/extref/generic/scrape_single', { json: {id: this.actor.id,url: url}})
+        api.post('/api/extref/generic/scrape_single', { json: {id: this.actor.id,url: url}})
           .then(data => {
-            ky.get('/api/actor/'+this.actor.id).json().then(data => {
+            api.get('/api/actor/'+this.actor.id).json().then(data => {
               if (data.id != 0){
                 this.$store.state.overlay.actordetails.actor = data
                 this.$store.state.actorList.isLoading = false

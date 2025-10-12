@@ -95,7 +95,7 @@ import EditButton from '../../components/EditButton'
 import LinkStashdbButton from '../../components/LinkStashdbButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
-import ky from 'ky'
+import api from '../../api';
 import VueLoadImage from 'vue-load-image'
 
 export default {
@@ -177,7 +177,7 @@ export default {
     async getAlternateSceneSourcesWithTitles() {
       this.stashLinkExists = false
       try {
-        const response = await ky.get('/api/scene/alternate_source/' + this.item.id).json();
+        const response = await api.get('/api/scene/alternate_source/' + this.item.id).json();
         this.alternateSources = [];
         if (response == null) {
           return 0;
@@ -224,7 +224,7 @@ export default {
       // the Scenes associated Tables such as Tags, Cast arwon't be Preloaded and
       // will cause errors when the Details Overlay loads
       if (this.reRead) {
-        ky.get('/api/scene/'+scene.id).json().then(data => {
+        api.get('/api/scene/'+scene.id).json().then(data => {
           if (data.id != 0){
             this.$store.commit('overlay/showDetails', { scene: data })
           }

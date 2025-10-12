@@ -146,7 +146,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../../api';
 import prettyBytes from 'pretty-bytes'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 
@@ -173,7 +173,7 @@ export default {
     async taskRescan () {
       try {
         await this.$store.dispatch('optionsStorage/save');
-        await ky.get('/api/task/rescan');
+        await api.get('/api/task/rescan');
       } catch (e) {
         this.$buefy.dialog.alert({
           title: 'Error',
@@ -186,10 +186,10 @@ export default {
       }
     },
     addFolder: async function () {
-      await ky.post('/api/options/storage', { json: { path: this.newVolumePath, type: 'local' } })
+      await api.post('/api/options/storage', { json: { path: this.newVolumePath, type: 'local' } })
     },
     addCloudStorage: async function () {
-      await ky.post('/api/options/storage', { json: { token: this.serviceToken, type: this.serviceSelected } })
+      await api.post('/api/options/storage', { json: { token: this.serviceToken, type: this.serviceSelected } })
     },
     removeFolder: function (folder) {
       this.$buefy.dialog.confirm({
@@ -198,12 +198,12 @@ export default {
         type: 'is-danger',
         hasIcon: true,
         onConfirm: function () {
-          ky.delete(`/api/options/storage/${folder.id}`)
+          api.delete(`/api/options/storage/${folder.id}`)
         }
       })
     },
     rescanFolder: function (folder) {
-      ky.get(`/api/task/rescan/${folder.id}`)
+      api.get(`/api/task/rescan/${folder.id}`)
     },
     saveExtensions () {
       this.$store.dispatch('optionsStorage/save')

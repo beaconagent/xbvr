@@ -67,7 +67,7 @@
 
 <script>
 import SceneCard from './SceneCard'
-import ky from 'ky'
+import api from '../../api';
 
 export default {
   name: 'List',
@@ -161,7 +161,7 @@ export default {
     show_scene_id() {
       if (this.$store.state.sceneList.show_scene_id != undefined && this.$store.state.sceneList.show_scene_id !='')
       {
-        ky.get('/api/scene/'+this.$store.state.sceneList.show_scene_id).json().then(data => {
+        api.get('/api/scene/'+this.$store.state.sceneList.show_scene_id).json().then(data => {
           if (data.id != 0){
             this.$store.commit('overlay/showDetails', { scene: data })
           }          
