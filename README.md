@@ -98,7 +98,7 @@ Gitpod has GitHub integration and, once authorized, can fork this repo into your
 
 Ready to get started?
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/beaconagent/xbvr/tree/request-queue-customizable)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/beaconagent/xbvr/tree/global-requests-timeout)
 
 ### Launch flow
  - postCreateCommand: vm init, repo clone, add concurrently + air
@@ -167,5 +167,6 @@ esc - closes details pane
 |	`--db_connection_pool_size` | DB_CONNECTION_POOL_SIZE | Int | sets the connection pool size for mariadb databases|
 |	`--concurrent_scrapers` | CONCURRENT_SCRAPERS | Int | set the number of scrapers that run concurrently default 9999|
 |	`--concurrent_requests` | CONCURRENT_REQUESTS | Int | set the number of concurrent requests limit from the default 10|
+|	`--requests_timeout` | REQUESTS_TIMEOUT | Int | set the internal requests timeout in ms from the default 10000|
 | | UI_USERNAME | String | set the username for UI authentication
 | | UI_PASSWORD | String | set the password for UI authentications

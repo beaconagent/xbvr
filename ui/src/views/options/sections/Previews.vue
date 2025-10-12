@@ -85,7 +85,7 @@
 </template>
 
 <script>
-import ky from 'ky'
+import api from '../../../api';
 import prettyBytes from 'pretty-bytes'
 
 export default {
@@ -117,7 +117,7 @@ export default {
   methods: {
     async loadState () {
       this.isLoading = true
-      await ky.get('/api/options/state')
+      await api.get('/api/options/state')
         .json()
         .then(data => {
           this.startTime = data.config.library.preview.startTime
@@ -130,7 +130,7 @@ export default {
     },
     async saveSettings () {
       this.isLoading = true
-      await ky.put('/api/options/previews', {
+      await api.put('/api/options/previews', {
         json: {
           startTime: this.startTime,
           snippetLength: this.snippetLength,
@@ -146,7 +146,7 @@ export default {
     },
     async testSettings () {
       this.$store.commit('optionsPreviews/hidePreview')
-      await ky.post('/api/options/previews/test', {
+      await api.post('/api/options/previews/test', {
         json: {
           startTime: this.startTime,
           snippetLength: this.snippetLength,
@@ -157,7 +157,7 @@ export default {
       })
     },
     async startGenerating () {
-      await ky.get('/api/task/preview/generate')
+      await api.get('/api/task/preview/generate')
     },
     prettyBytes
   }

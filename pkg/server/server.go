@@ -1,257 +1,287 @@
 package server
 
 import (
-	"fmt"
-	"net"
-	"net/http"
-	"net/url"
-	"path/filepath"
-	"strconv"
-	"strings"
+    "encoding/json"
+    "fmt"
+    "net"
+    "net/http"
+    "net/url"
+    "path/filepath"
+    "strconv"
+    "strings"
 
-	auth "github.com/abbot/go-http-auth"
-	restfulspec "github.com/emicklei/go-restful-openapi/v2"
-	"github.com/emicklei/go-restful/v3"
-	"github.com/gammazero/nexus/v3/router"
-	"github.com/gammazero/nexus/v3/wamp"
-	"github.com/go-openapi/spec"
-	"github.com/gorilla/mux"
-	wwwlog "github.com/gowww/log"
-	"github.com/gregjones/httpcache/diskcache"
-	"github.com/koding/websocketproxy"
-	"github.com/peterbourgon/diskv"
-	"github.com/rs/cors"
-	"willnorris.com/go/imageproxy"
+    auth "github.com/abbot/go-http-auth"
+    restfulspec "github.com/emicklei/go-restful-openapi/v2"
+    "github.com/emicklei/go-restful/v3"
+    "github.com/gammazero/nexus/v3/router"
+    "github.com/gammazero/nexus/v3/wamp"
+    "github.com/go-openapi/spec"
+    "github.com/gorilla/mux"
+    wwwlog "github.com/gowww/log"
+    "github.com/gregjones/httpcache/diskcache"
+    "github.com/koding/websocketproxy"
+    "github.com/peterbourgon/diskv"
+    "github.com/rs/cors"
+    "willnorris.com/go/imageproxy"
 
-	"github.com/xbapps/xbvr/pkg/api"
-	"github.com/xbapps/xbvr/pkg/common"
-	"github.com/xbapps/xbvr/pkg/config"
-	"github.com/xbapps/xbvr/pkg/migrations"
-	"github.com/xbapps/xbvr/pkg/models"
-	"github.com/xbapps/xbvr/pkg/session"
-	"github.com/xbapps/xbvr/pkg/tasks"
-	"github.com/xbapps/xbvr/ui"
+    "github.com/xbapps/xbvr/pkg/api"
+    "github.com/xbapps/xbvr/pkg/common"
+    "github.com/xbapps/xbvr/pkg/config"
+    "github.com/xbapps/xbvr/pkg/migrations"
+    "github.com/xbapps/xbvr/pkg/models"
+    "github.com/xbapps/xbvr/pkg/session"
+    "github.com/xbapps/xbvr/pkg/tasks"
+    "github.com/xbapps/xbvr/ui"
 )
 
 var (
-	wsAddr = common.WsAddr
-	log    = &common.Log
+    wsAddr = common.WsAddr
+    log    = &common.Log
 )
 
 func authHandle(pattern string, authEnabled bool, authSecret auth.SecretProvider, handler http.Handler) {
-	if authEnabled {
-		authenticator := auth.NewBasicAuthenticator("default", authSecret)
-		http.HandleFunc(pattern, authenticator.Wrap(func(res http.ResponseWriter, req *auth.AuthenticatedRequest) {
-			http.StripPrefix(pattern, handler).ServeHTTP(res, &req.Request)
-		}))
-	} else {
-		http.Handle(pattern, http.StripPrefix(pattern, handler))
-	}
+    if authEnabled {
+        authenticator := auth.NewBasicAuthenticator("default", authSecret)
+        http.HandleFunc(pattern, authenticator.Wrap(func(res http.ResponseWriter, req *auth.AuthenticatedRequest) {
+            http.StripPrefix(pattern, handler).ServeHTTP(res, &req.Request)
+        }))
+    } else {
+        http.Handle(pattern, http.StripPrefix(pattern, handler))
+    }
 }
 
 func StartServer(version, commit, branch, date string) {
-	common.CurrentVersion = version
+    common.CurrentVersion = version
 
-	config.LoadConfig()
-	common.CopyXbvrData()
+    config.LoadConfig()
+    common.CopyXbvrData()
 
-	// Remove old locks
-	models.RemoveAllLocks()
+    // Remove old locks
+    models.RemoveAllLocks()
 
-	migrations.Migrate("0024-drop-actions-old")
+    migrations.Migrate("0024-drop-actions-old")
 
-	// Run migrations in background
-	go func() {
-		config.State.Migration.IsRunning = true
-		migrations.ProcessCustomSceneRemappingFiles()
-		migrations.Migrate("")
-		config.CompleteMigration()
-	}()
+    // Run migrations in background
+    go func() {
+        config.State.Migration.IsRunning = true
+        migrations.ProcessCustomSceneRemappingFiles()
+        migrations.Migrate("")
+        config.CompleteMigration()
+    }()
 
-	go tasks.CheckDependencies()
-	models.CheckVolumes()
+    go tasks.CheckDependencies()
+    models.CheckVolumes()
 
-	models.InitSites()
+    models.InitSites()
 
-	restful.DefaultContainer.EnableContentEncoding(true)
+    restful.DefaultContainer.EnableContentEncoding(true)
 
-	// API endpoints
-	ws := new(restful.WebService)
-	ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
-		resp.AddHeader("Location", "/ui/")
-		resp.WriteHeader(http.StatusFound)
-	}))
+    // API endpoints
+    ws := new(restful.WebService)
+    ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
+        resp.AddHeader("Location", "/ui/")
+        resp.WriteHeader(http.StatusFound)
+    }))
 
-	restful.Add(ws)
-	restful.Add(api.SceneResource{}.WebService())
-	restful.Add(api.ActorResource{}.WebService())
-	restful.Add(api.TaskResource{}.WebService())
-	restful.Add(api.DMSResource{}.WebService())
-	restful.Add(api.ConfigResource{}.WebService())
-	restful.Add(api.FilesResource{}.WebService())
-	restful.Add(api.DeoVRResource{}.WebService())
-	restful.Add(api.HeresphereResource{}.WebService())
-	restful.Add(api.PlaylistResource{}.WebService())
-	restful.Add(api.AkaResource{}.WebService())
-	restful.Add(api.TagGroupResource{}.WebService())
-	restful.Add(api.ExternalReference{}.WebService())
+    restful.Add(ws)
+    restful.Add(api.SceneResource{}.WebService())
+    restful.Add(api.ActorResource{}.WebService())
+    restful.Add(api.TaskResource{}.WebService())
+    restful.Add(api.DMSResource{}.WebService())
+    restful.Add(api.ConfigResource{}.WebService())
+    restful.Add(api.FilesResource{}.WebService())
+    restful.Add(api.DeoVRResource{}.WebService())
+    restful.Add(api.HeresphereResource{}.WebService())
+    restful.Add(api.PlaylistResource{}.WebService())
+    restful.Add(api.AkaResource{}.WebService())
+    restful.Add(api.TagGroupResource{}.WebService())
+    restful.Add(api.ExternalReference{}.WebService())
 
-	restConfig := restfulspec.Config{
-		WebServices: restful.RegisteredWebServices(),
-		APIPath:     "/api.json",
-		PostBuildSwaggerObjectHandler: func(swo *spec.Swagger) {
-			e := spec.VendorExtensible{}
-			e.AddExtension("x-logo", map[string]interface{}{
-				"url": "/ui/icons/xbvr-512.png",
-			})
+    // Simple /api/config endpoint
+    http.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
 
-			swo.Info = &spec.Info{
-				InfoProps: spec.InfoProps{
-					Title:   "XBVR API",
-					Version: common.CurrentVersion,
-				},
-				VendorExtensible: e,
-			}
-			swo.Tags = []spec.Tag{
-				{
-					TagProps: spec.TagProps{
-						Name:        "Config",
-						Description: "Endpoints used by options screen",
-					},
-				},
-				{
-					TagProps: spec.TagProps{
-						Name:        "DeoVR",
-						Description: "Endpoints for interfacing with DeoVR player",
-					},
-				},
-				{
-					TagProps: spec.TagProps{
-						Name:        "HereSphere",
-						Description: "Endpoints for interfacing with HereSphere player",
-					},
-				},
-			}
-		},
-	}
-	restful.Add(restfulspec.NewOpenAPIService(restConfig))
+        switch r.Method {
+        case http.MethodGet:
+            json.NewEncoder(w).Encode(map[string]int{"requestsTimeout": common.RequestsTimeout})
+            return
 
-	// Static files
-	authHandle("/ui/", common.IsUIAuthEnabled(), common.GetUISecret, http.FileServer(ui.GetFileSystem(common.EnvConfig.Debug)))
+        case http.MethodPost, http.MethodPut:
+            var req struct {
+                RequestsTimeout int `json:"requestsTimeout"`
+            }
+            if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+                http.Error(w, "invalid JSON", http.StatusBadRequest)
+                return
+            }
+            if req.RequestsTimeout > 0 {
+                common.RequestsTimeout = req.RequestsTimeout
+            }
+            json.NewEncoder(w).Encode(map[string]int{"requestsTimeout": common.RequestsTimeout})
+            return
 
-	// Imageproxy
-	r := mux.NewRouter()
-	p := imageproxy.NewProxy(NewForceCacheTransport(), diskCache(filepath.Join(common.AppDir, "imageproxy")))
-	p.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
-	// If the client request has a cache-control header (such as 'no-cache'), pass them
-	// onto the imageproxy so that this can be respected.
-	p.PassRequestHeaders = append(p.PassRequestHeaders, "Cache-Control")
-	u, _ := url.Parse("http://127.0.0.1:" + strconv.Itoa(config.Config.Server.Port))
-	p.DefaultBaseURL = u
-	r.PathPrefix("/img/").Handler(ForceShortCacheHandler(http.StripPrefix("/img", p)))
-	hmp := NewHeatmapThumbnailProxy(p, diskCache(filepath.Join(common.AppDir, "heatmapthumbnailproxy")))
-	r.PathPrefix("/imghm/").Handler(http.StripPrefix("/imghm", hmp))
-	downloadhandler := DownloadHandler{}
-	r.PathPrefix("/download/").Handler(http.StripPrefix("/download/", downloadhandler))
-	myfileshandler := MyFilesHandler{}
-	r.PathPrefix("/myfiles/").Handler(http.StripPrefix("/myfiles/", myfileshandler))
-	r.SkipClean(true)
+        default:
+            http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+    })
 
-	r.PathPrefix("/").Handler(http.DefaultServeMux)
+    restConfig := restfulspec.Config{
+        WebServices: restful.RegisteredWebServices(),
+        APIPath:     "/api.json",
+        PostBuildSwaggerObjectHandler: func(swo *spec.Swagger) {
+            e := spec.VendorExtensible{}
+            e.AddExtension("x-logo", map[string]interface{}{
+                "url": "/ui/icons/xbvr-512.png",
+            })
 
-	// CORS
-	handler := cors.Default().Handler(r)
+            swo.Info = &spec.Info{
+                InfoProps: spec.InfoProps{
+                    Title:   "XBVR API",
+                    Version: common.CurrentVersion,
+                },
+                VendorExtensible: e,
+            }
+            swo.Tags = []spec.Tag{
+                {
+                    TagProps: spec.TagProps{
+                        Name:        "Config",
+                        Description: "Endpoints used by options screen",
+                    },
+                },
+                {
+                    TagProps: spec.TagProps{
+                        Name:        "DeoVR",
+                        Description: "Endpoints for interfacing with DeoVR player",
+                    },
+                },
+                {
+                    TagProps: spec.TagProps{
+                        Name:        "HereSphere",
+                        Description: "Endpoints for interfacing with HereSphere player",
+                    },
+                },
+            }
+        },
+    }
+    restful.Add(restfulspec.NewOpenAPIService(restConfig))
 
-	// Global request concurrency limit
-	handler = QueueMiddleware(common.ConcurrentRequests, handler)
+    // Static files
+    authHandle("/ui/", common.IsUIAuthEnabled(), common.GetUISecret, http.FileServer(ui.GetFileSystem(common.EnvConfig.Debug)))
 
-	// WAMP router
-	routerConfig := &router.Config{
-		Debug: false,
-		RealmConfigs: []*router.RealmConfig{
-			{
-				URI:           wamp.URI("default"),
-				AnonymousAuth: true,
-				AllowDisclose: false,
-			},
-		},
-	}
+    // Imageproxy
+    r := mux.NewRouter()
+    p := imageproxy.NewProxy(NewForceCacheTransport(), diskCache(filepath.Join(common.AppDir, "imageproxy")))
+    p.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+    // If the client request has a cache-control header (such as 'no-cache'), pass them
+    // onto the imageproxy so that this can be respected.
+    p.PassRequestHeaders = append(p.PassRequestHeaders, "Cache-Control")
+    u, _ := url.Parse("http://127.0.0.1:" + strconv.Itoa(config.Config.Server.Port))
+    p.DefaultBaseURL = u
+    r.PathPrefix("/img/").Handler(ForceShortCacheHandler(http.StripPrefix("/img", p)))
+    hmp := NewHeatmapThumbnailProxy(p, diskCache(filepath.Join(common.AppDir, "heatmapthumbnailproxy")))
+    r.PathPrefix("/imghm/").Handler(http.StripPrefix("/imghm", hmp))
+    downloadhandler := DownloadHandler{}
+    r.PathPrefix("/download/").Handler(http.StripPrefix("/download/", downloadhandler))
+    myfileshandler := MyFilesHandler{}
+    r.PathPrefix("/myfiles/").Handler(http.StripPrefix("/myfiles/", myfileshandler))
+    r.SkipClean(true)
 
-	wampRouter, err := router.NewRouter(routerConfig, log)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer wampRouter.Close()
+    r.PathPrefix("/").Handler(http.DefaultServeMux)
 
-	// Run websocket server.
-	wss := router.NewWebsocketServer(wampRouter)
-	wss.AllowOrigins([]string{"*"})
-	wsCloser, err := wss.ListenAndServe(wsAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer wsCloser.Close()
+    // CORS
+    handler := cors.Default().Handler(r)
 
-	// Proxy websocket
-	wsURL, err := url.Parse("ws://" + wsAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
+    // Global request concurrency limit
+    handler = QueueMiddleware(common.ConcurrentRequests, handler)
 
-	http.HandleFunc("/ws/", func(w http.ResponseWriter, req *http.Request) {
-		req.Header["Origin"] = nil
-		handler := websocketproxy.ProxyHandler(wsURL)
-		handler.ServeHTTP(w, req)
-	})
+    // WAMP router
+    routerConfig := &router.Config{
+        Debug: false,
+        RealmConfigs: []*router.RealmConfig{
+            {
+                URI:            wamp.URI("default"),
+                AnonymousAuth:  true,
+                AllowDisclose:  false,
+            },
+        },
+    }
 
-	// Attach logrus hook
-	wampHook := common.NewWampHook()
-	log.AddHook(wampHook)
+    wampRouter, err := router.NewRouter(routerConfig, log)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer wampRouter.Close()
 
-	log.Infof("XBVR %v (build date %v) starting...", version, date)
+    // Run websocket server.
+    wss := router.NewWebsocketServer(wampRouter)
+    wss.AllowOrigins([]string{"*"})
+    wsCloser, err := wss.ListenAndServe(wsAddr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer wsCloser.Close()
 
-	// DMS
-	if config.Config.Interfaces.DLNA.Enabled {
-		go tasks.StartDMS()
-	}
+    // Proxy websocket
+    wsURL, err := url.Parse("ws://" + wsAddr)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	// DeoVR remote
-	go session.DeoRemote()
+    http.HandleFunc("/ws/", func(w http.ResponseWriter, req *http.Request) {
+        req.Header["Origin"] = nil
+        handler := websocketproxy.ProxyHandler(wsURL)
+        handler.ServeHTTP(w, req)
+    })
 
-	// Cron
-	SetupCron()
+    // Attach logrus hook
+    wampHook := common.NewWampHook()
+    log.AddHook(wampHook)
 
-	// List binding addresses
-	addrs, _ := net.InterfaceAddrs()
-	ips := []string{}
-	for _, addr := range addrs {
-		ip, _ := addr.(*net.IPNet)
-		if ip.IP.To4() != nil {
-			ips = append(ips, fmt.Sprintf("http://%v:%v/", ip.IP, config.Config.Server.Port))
-		}
-	}
+    log.Infof("XBVR %v (build date %v) starting...", version, date)
 
-	// Prepare state
-	tasks.UpdateState()
-	config.State.Server.BoundIP = ips
-	config.SaveState()
+    // DMS
+    if config.Config.Interfaces.DLNA.Enabled {
+        go tasks.StartDMS()
+    }
 
-	log.Infof("Web UI available at %s", strings.Join(ips, ", "))
-	log.Infof("Web UI Authentication enabled: %v", common.IsUIAuthEnabled())
-	log.Infof("Using database: %s", common.DATABASE_URL)
+    // DeoVR remote
+    go session.DeoRemote()
 
-	httpAddr := fmt.Sprintf("%v:%v", config.Config.Server.BindAddress, config.Config.Server.Port)
-	if common.EnvConfig.DebugRequests {
-		log.Fatal(http.ListenAndServe(httpAddr, wwwlog.Handle(handler, &wwwlog.Options{Color: true})))
-	} else {
-		log.Fatal(http.ListenAndServe(httpAddr, handler))
-	}
+    // Cron
+    SetupCron()
+
+    // List binding addresses
+    addrs, _ := net.InterfaceAddrs()
+    ips := []string{}
+    for _, addr := range addrs {
+        ip, _ := addr.(*net.IPNet)
+        if ip.IP.To4() != nil {
+            ips = append(ips, fmt.Sprintf("http://%v:%v/", ip.IP, config.Config.Server.Port))
+        }
+    }
+
+    // Prepare state
+    tasks.UpdateState()
+    config.State.Server.BoundIP = ips
+    config.SaveState()
+
+    log.Infof("Web UI available at %s", strings.Join(ips, ", "))
+    log.Infof("Web UI Authentication enabled: %v", common.IsUIAuthEnabled())
+    log.Infof("Using database: %s", common.DATABASE_URL)
+
+    httpAddr := fmt.Sprintf("%v:%v", config.Config.Server.BindAddress, config.Config.Server.Port)
+    if common.EnvConfig.DebugRequests {
+        log.Fatal(http.ListenAndServe(httpAddr, wwwlog.Handle(handler, &wwwlog.Options{Color: true})))
+    } else {
+        log.Fatal(http.ListenAndServe(httpAddr, handler))
+    }
 }
 
 func diskCache(path string) *diskcache.Cache {
-	d := diskv.New(diskv.Options{
-		BasePath:  path,
-		Transform: func(s string) []string { return []string{s[0:2], s[2:4]} },
-	})
-	return diskcache.NewWithDiskv(d)
+    d := diskv.New(diskv.Options{
+        BasePath:  path,
+        Transform: func(s string) []string { return []string{s[0:2], s[2:4]} },
+    })
+    return diskcache.NewWithDiskv(d)
 }

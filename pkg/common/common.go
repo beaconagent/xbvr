@@ -10,6 +10,7 @@ var (
 	WsAddr              = "0.0.0.0:9998"
 	CurrentVersion      = ""
 	ConcurrentRequests  = 10
+	RequestsTimeout     = 10000
 )
 
 type EnvConfigSpec struct {
@@ -25,6 +26,7 @@ type EnvConfigSpec struct {
 	DBConnectionPoolSize int    `envconfig:"DB_CONNECTION_POOL_SIZE" required:"false" default:"0"`
 	ConcurrentScrapers   int    `envconfig:"CONCURRENT_SCRAPERS" required:"false" default:"9999"`
 	ConcurrentRequests   int    `envconfig:"CONCURRENT_REQUESTS" required:"false" default:"10"`
+	RequestsTimeout      int    `envconfig:"REQUESTS_TIMEOUT" required:"false" default:"60000"`
 }
 
 var EnvConfig EnvConfigSpec
