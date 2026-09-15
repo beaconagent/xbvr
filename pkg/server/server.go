@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -96,6 +97,34 @@ func StartServer(version, commit, branch, date string) {
 	restful.Add(api.TagGroupResource{}.WebService())
 	restful.Add(api.ExternalReference{}.WebService())
 	restful.Add(api.InconsistenciesResource{}.WebService())
+
+	http.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.Method {
+		case http.MethodGet:
+			json.NewEncoder(w).Encode(map[string]int{"requestsTimeout": common.RequestsTimeout})
+			return
+
+		case http.MethodPost, http.MethodPut:
+			var req struct {
+				RequestsTimeout int `json:"requestsTimeout"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if req.RequestsTimeout > 0 {
+				common.RequestsTimeout = req.RequestsTimeout
+			}
+			json.NewEncoder(w).Encode(map[string]int{"requestsTimeout": common.RequestsTimeout})
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	})
 
 	restConfig := restfulspec.Config{
 		WebServices: restful.RegisteredWebServices(),

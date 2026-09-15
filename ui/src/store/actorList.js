@@ -1,4 +1,4 @@
-import ky from 'ky'
+import api from '../api';
 import Vue from 'vue'
 
 function defaultValue (v, d) {
@@ -106,7 +106,7 @@ const mutations = {
       return obj
     })
 
-    ky.post('/api/actor/toggle', {
+    api.post('/api/actor/toggle', {
       json: {
         actor_id: payload.actor_id,
         list: payload.list
@@ -144,8 +144,8 @@ const mutations = {
 
 const actions = {
   async filters ({ state }) {
-    state.playlists = await ky.get('/api/playlist/actor').json()
-    state.filterOpts = await ky.get('/api/actor/filters').json()    
+    state.playlists = await api.get('/api/playlist/actor').json()
+    state.filterOpts = await api.get('/api/actor/filters').json()    
   },
   async load ({ state, getters, commit }, params) {    
     const iOffset = params.offset || 0
@@ -156,7 +156,7 @@ const actions = {
     q.offset = iOffset
     q.limit = state.limit
     
-    const data = await ky
+    const data = await api
       .post('/api/actor/list', { json: q })
       .json()
 

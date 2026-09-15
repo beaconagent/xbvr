@@ -58,7 +58,7 @@
 </template>
 
 <script>
-import ky from "ky";
+import api from '../../../api';
 
 export default {
   name: "Funscripts",

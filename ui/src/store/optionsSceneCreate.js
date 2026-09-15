@@ -1,4 +1,4 @@
-import ky from 'ky'
+import api from '../api';
 
 const state = {
   scrapeScene: '',
