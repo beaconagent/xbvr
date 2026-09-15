@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	DATABASE_URL   = ""
-	WsAddr         = "0.0.0.0:9998"
-	CurrentVersion = ""
+	DATABASE_URL        = ""
+	WsAddr              = "0.0.0.0:9998"
+	CurrentVersion      = ""
+	ConcurrentRequests  = 10
 )
 
 type EnvConfigSpec struct {
@@ -23,6 +24,7 @@ type EnvConfigSpec struct {
 	WebPort              int    `envconfig:"XBVR_WEB_PORT" required:"false" default:"0"`
 	DBConnectionPoolSize int    `envconfig:"DB_CONNECTION_POOL_SIZE" required:"false" default:"0"`
 	ConcurrentScrapers   int    `envconfig:"CONCURRENT_SCRAPERS" required:"false" default:"9999"`
+	ConcurrentRequests   int    `envconfig:"CONCURRENT_REQUESTS" required:"false" default:"10"`
 }
 
 var EnvConfig EnvConfigSpec
