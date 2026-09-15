@@ -1,0 +1,26 @@
+{
+  "name": "xbvr",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": ["--init"],
+  "forwardPorts": [9999, 1338, 9998],
+  "portsAttributes": {
+    "9999": { "label": "xbvr", "onAutoForward": "openPreview" },
+    "1338": { "onAutoForward": "ignore" },
+    "9998": { "onAutoForward": "ignore" }
+  },
+  "postCreateCommand": "yarn config set ignore-engines true && yarn global add concurrently && go install github.com/air-verse/air@latest",
+  "postStartCommand": "cd /workspaces/xbvr && go generate && go get && yarn && yarn dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Vue.volar"
+      ]
+    }
+  },
+  "remoteUser": "gitpod"
+}
